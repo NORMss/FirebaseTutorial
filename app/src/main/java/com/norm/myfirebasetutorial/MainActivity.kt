@@ -3,10 +3,14 @@ package com.norm.myfirebasetutorial
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,7 +52,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val fs = Firebase.firestore
+        val storage = Firebase.storage.reference.child("images")
+
         setContent {
+            val launcher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.PickVisualMedia()
+            ) { uri ->
+                uri?.let {
+                    val appName = application.getString(R.string.app_name)
+                    val timeInMillis = System.currentTimeMillis()
+                    val tasks = storage.child("${appName}_${timeInMillis}_image" + ".jpg").putBytes(
+                        bitmapToByteArray(this, uri)
+                    )
+                    tasks.addOnSuccessListener { uploadTask ->
+                        uploadTask.metadata?.reference?.downloadUrl?.addOnCompleteListener { uriTask ->
+                            saveTechnology(fs, uriTask.result.toString())
+                        }
+                    }
+                }
+            }
+
             MyFirebaseTutorialTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -60,6 +85,13 @@ class MainActivity : ComponentActivity() {
                                 top = padding.calculateTopPadding(),
                                 bottom = padding.calculateBottomPadding(),
                             ),
+                        onClick = {
+                            launcher.launch(
+                                PickVisualMediaRequest(
+                                    mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        }
                     )
                 }
             }
@@ -68,7 +100,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier) {
+fun MainScreen(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     val context = LocalContext.current
 
     val fs = Firebase.firestore
@@ -127,14 +162,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth(),
             onClick = {
-                val tasks = storage.child("wallpaper.jpg").putBytes(
-                    bitmapToByteArray(context = context)
-                )
-                tasks.addOnSuccessListener { uploadTask ->
-                    uploadTask.metadata?.reference?.downloadUrl?.addOnCompleteListener { uriTask ->
-                        saveTechnology(fs, uriTask.result.toString())
-                    }
-                }
+                onClick()
             }
         ) {
             Text(
@@ -144,8 +172,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
     }
 }
 
-private fun bitmapToByteArray(context: Context): ByteArray {
-    val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.bg_img_weather_1)
+private fun bitmapToByteArray(context: Context, uri: Uri): ByteArray {
+    val inputStream = context.contentResolver.openInputStream(uri)
+    val bitmap = BitmapFactory.decodeStream(inputStream)
     val baos = ByteArrayOutputStream()
     bitmap.compress(Bitmap.CompressFormat.JPEG, 75, baos)
     return baos.toByteArray()
