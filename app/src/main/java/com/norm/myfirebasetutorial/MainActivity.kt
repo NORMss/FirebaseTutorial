@@ -40,11 +40,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import com.norm.myfirebasetutorial.data.Technology
+import com.norm.myfirebasetutorial.presentation.AuthScreen
+import com.norm.myfirebasetutorial.presentation.singUp
 import com.norm.myfirebasetutorial.ui.theme.MyFirebaseTutorialTheme
 import java.io.ByteArrayOutputStream
 
@@ -55,6 +59,7 @@ class MainActivity : ComponentActivity() {
 
         val fs = Firebase.firestore
         val storage = Firebase.storage.reference.child("images")
+        val fa = Firebase.auth
 
         setContent {
             val launcher = rememberLauncherForActivityResult(
@@ -78,18 +83,33 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                 ) { padding ->
-                    MainScreen(
+//                    MainScreen(
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                            .padding(
+//                                top = padding.calculateTopPadding(),
+//                                bottom = padding.calculateBottomPadding(),
+//                            ),
+//                        onClick = {
+//                            launcher.launch(
+//                                PickVisualMediaRequest(
+//                                    mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
+//                                )
+//                            )
+//                        }
+//                    )
+                    AuthScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(
                                 top = padding.calculateTopPadding(),
                                 bottom = padding.calculateBottomPadding(),
                             ),
-                        onClick = {
-                            launcher.launch(
-                                PickVisualMediaRequest(
-                                    mediaType = ActivityResultContracts.PickVisualMedia.ImageOnly
-                                )
+                        onAuth = { email, password ->
+                            singUp(
+                                auth = fa,
+                                email = email,
+                                password = password,
                             )
                         }
                     )
@@ -193,6 +213,5 @@ private fun saveTechnology(fs: FirebaseFirestore, url: String) {
                 mavenUrl = "androidx.room:room-runtime",
                 logoUrl = url,
             )
-
         )
 }

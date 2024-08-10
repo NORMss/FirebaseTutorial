@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.gms.google.services)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -51,11 +52,14 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.material.icons.extended)
+
     implementation(libs.coil.compose)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
+    implementation(libs.firebase.auth)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
